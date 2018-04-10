@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.6
 
 import re
 import random
@@ -20,7 +20,12 @@ def extract(pattern: str, string: str) -> str:
 
 def display_item(axe, img: np.ndarray, mask: np.ndarray, title=""):
     m = resize(mask, img.shape, mode='constant', preserve_range=True)
-    assert(img.shape == m.shape)
+    try:
+        assert(img.shape == m.shape)
+    except AssertionError:
+        print(title)
+        print(img.shape, m.shape)
+        raise
 
     axe.imshow(img, cmap="gray")
     axe.set_title(title)
@@ -28,18 +33,18 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray, title=""):
 
 
 def display(background_names: List[str], segmentation_names: List[List[str]], indexes: List[int]) -> None:
-    rn = int(ceil(len(indexes) ** .5))
+    rn: int = int(ceil(len(indexes) ** .5))
 
     fig, axes = plt.subplots(nrows=rn, ncols=rn * len(segmentation_names))
 
-    for i in indexes:
-        img = imread(background_names[i])
+    for i, idx in enumerate(indexes):
+        img: np.ndarray = imread(background_names[idx])
 
         for l, names in enumerate(segmentation_names):
             axe_id = len(segmentation_names) * i + l
             axe = axes.flatten()[axe_id]
-            seg = imread(names[i])
-            title:str = "/".join(map(str, Path(names[i]).parts[-2:]))
+            seg: np.ndarray = imread(names[idx])
+            title: str = "/".join(map(str, Path(names[idx]).parts[-2:]))
             display_item(axe, img, seg, title)
 
     plt.show()
@@ -54,7 +59,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0,
                         help="The seed for the number generator. Used to sample the images. \
                              Useful to reproduce the same outputs between runs.")
-    parser.add_argument("--patient_id", type=str, required=True,
+    parser.add_argument("--patient_id", type=str, default=".*/(.*).png",
                         help="The regex to extract the patient id from the images names \
                              Required to match the images between them")
     parser.add_argument("folders", type=str, nargs='*',
@@ -80,4 +85,8 @@ if __name__ == "__main__":
     del ids
 
     order: List[int] = list(range(len(background_names)))
-    display(background_names, segmentation_names, order[:args.n])
+    while True:
+        # display(background_names, segmentation_names, order[:args.n])
+        # print(order[:args.n])
+        print(random.sample(order, args.n))
+        display(background_names, segmentation_names, random.sample(order, args.n))
