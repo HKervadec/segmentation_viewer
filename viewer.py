@@ -59,9 +59,9 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0,
                         help="The seed for the number generator. Used to sample the images. \
                              Useful to reproduce the same outputs between runs.")
-    parser.add_argument("--patient_id", type=str, default=".*/(.*).png",
-                        help="The regex to extract the patient id from the images names \
-                             Required to match the images between them")
+    parser.add_argument("--id_regex", type=str, default=".*/(.*).png",
+                        help="The regex to extract the image id from the images names \
+                             Required to match the images between them.")
     parser.add_argument("folders", type=str, nargs='*',
                         help="The folder containing the source segmentations.")
     args = parser.parse_args()
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     background_names: List[str] = sorted(map(str, img_source.glob("*.png")))
     segmentation_names: List[List[str]] = [sorted(map(str, Path(folder).glob("*.png"))) for folder in args.folders]
 
-    extracter: Callable[[str], str] = partial(extract, args.patient_id)
+    extracter: Callable[[str], str] = partial(extract, args.id_regex)
     ids: List[str] = list(map(extracter, background_names))
     for names in segmentation_names:
         assert(ids == list(map(extracter, names)))
@@ -86,7 +86,4 @@ if __name__ == "__main__":
 
     order: List[int] = list(range(len(background_names)))
     while True:
-        # display(background_names, segmentation_names, order[:args.n])
-        # print(order[:args.n])
-        print(random.sample(order, args.n))
         display(background_names, segmentation_names, random.sample(order, args.n))
