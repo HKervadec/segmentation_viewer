@@ -31,9 +31,11 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray, title=""):
     axe.imshow(img, cmap="gray")
     axe.set_title(title)
     axe.contour(m, cmap='rainbow')
+    axe.axis('off')
 
 
-def display(background_names: List[str], segmentation_names: List[List[str]], indexes: List[int]) -> None:
+def display(background_names: List[str], segmentation_names: List[List[str]],
+            indexes: List[int], titles: List[List[str]]) -> None:
     rn: int = int(ceil(len(indexes) ** .5))
 
     fig, axes = plt.subplots(nrows=rn, ncols=rn * len(segmentation_names))
@@ -45,7 +47,7 @@ def display(background_names: List[str], segmentation_names: List[List[str]], in
             axe_id = len(segmentation_names) * i + l
             axe = axes.flatten()[axe_id]
             seg: np.ndarray = imread(names[idx])
-            title: str = "/".join(map(str, Path(names[idx]).parts[-2:]))
+            title: str = titles[l][idx]
             display_item(axe, img, seg, title)
 
     plt.show()
@@ -65,6 +67,8 @@ def get_args() -> argparse.Namespace:
                              Required to match the images between them.")
     parser.add_argument("folders", type=str, nargs='*',
                         help="The folder containing the source segmentations.")
+    parser.add_argument("--display_names", type=str, nargs='*',
+                        help="The display name for the folders in the viewer")
     args = parser.parse_args()
 
     return args
@@ -93,6 +97,17 @@ if __name__ == "__main__":
             pprint(names[:10])
     del ids
 
+    if args.display_names is None:
+        display_names = [""] * len(args.folders)
+    else:
+        assert(len(args.display_names) == len(args.folders))
+        display_names = args.display_names
+
+    # fn_title: Callable[[str, int], str] = lambda s, _: "/".join(map(str, Path(s).parts[-2:]))
+    fn_title: Callable[[str, int], str] = lambda s, i: display_names[i] + " " + re.match(args.id_regex, s).group(1)
+
+    titles = [[fn_title(path, i) for path in l] for i, l in enumerate(segmentation_names)]
+
     order: List[int] = list(range(len(background_names)))
     while True:
-        display(background_names, segmentation_names, random.sample(order, args.n))
+        display(background_names, segmentation_names, random.sample(order, args.n), titles)
