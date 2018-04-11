@@ -5,6 +5,7 @@ import random
 import argparse
 from math import ceil
 from pathlib import Path
+from pprint import pprint
 from functools import partial
 from typing import List, Callable
 
@@ -79,9 +80,17 @@ if __name__ == "__main__":
 
     extracter: Callable[[str], str] = partial(extract, args.id_regex)
     ids: List[str] = list(map(extracter, background_names))
-    for names in segmentation_names:
-        assert(ids == list(map(extracter, names)))
-        assert(len(background_names) == len(names))
+
+    for names, folder in zip(segmentation_names, args.folders):
+        try:
+            assert(len(background_names) == len(names))
+            assert(ids == list(map(extracter, names)))
+        except AssertionError:
+            print(f"Error verifying content for folder {folder}")
+            print(f"Background folder '{img_source}': {len(background_names)} imgs")
+            pprint(background_names[:10])
+            print(f"Folder '{folder}': {len(names)} imgs")
+            pprint(names[:10])
     del ids
 
     order: List[int] = list(range(len(background_names)))
