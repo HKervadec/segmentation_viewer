@@ -5,14 +5,18 @@ The idea is to sample images and the associated results (for instance: ground tr
 ```
 usage: viewer [-h] [-n N] --img_source IMG_SOURCE [--seed SEED]
               [--id_regex ID_REGEX]
+              [--display_names [DISPLAY_NAMES [DISPLAY_NAMES ...]]]
+              [--crop CROP]
               [folders [folders ...]]
 ```
 You can specify the regex in patient_id to regroup the images by id. By default, it will regroup images per name.
 
-It handles of the shelf both multi-class and continuous (probabilities map) as segmentation inputs.
+The display names are useful to have better columns names, instead of the complete folder name.
+
+It handles of the shelf both multi-class and continuous (probabilities map) as segmentation inputs, but can easily be tweaked for each application.
 
 ![example](example.png)
 
 Many things to add:
-* Better use of the space with matplotlib
 * Use the button to go to the next batch of images
+* Remove all the wasted space around the plots

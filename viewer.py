@@ -2,7 +2,6 @@
 
 import re
 import argparse
-from math import ceil
 from pathlib import Path
 from pprint import pprint
 from functools import partial
@@ -22,7 +21,7 @@ def extract(pattern: str, string: str) -> str:
         return None
 
 
-def display_item(axe, img: np.ndarray, mask: np.ndarray, title=""):
+def display_item(axe, img: np.ndarray, mask: np.ndarray):
     m = resize(mask, img.shape, mode='constant', preserve_range=True)
     try:
         assert(img.shape == m.shape)
@@ -35,13 +34,13 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray, title=""):
         m = m[:, :, 0]
 
     axe.imshow(img, cmap="gray")
-    axe.set_title(title)
     axe.contour(m, cmap='rainbow')
     axe.axis('off')
 
 
 def display(background_names: List[str], segmentation_names: List[List[str]],
-            indexes: List[int], titles: List[List[str]], crop: int) -> None:
+            indexes: List[int], column_title: List[str], row_title: List[str],
+            crop: int) -> None:
     fig = plt.figure()
     gs = gridspec.GridSpec(len(indexes), len(segmentation_names))
 
@@ -50,21 +49,28 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
         if crop > 0:
             img = img[crop:-crop, crop:-crop]
 
-        for l, names in enumerate(segmentation_names):
-            axe = fig.add_subplot(gs[i, l])
+        for j, names in enumerate(segmentation_names):
+            axe = fig.add_subplot(gs[i, j])
 
             seg: np.ndarray = imread(names[idx])
             if crop > 0:
                 seg = seg[crop:-crop, crop:-crop]
 
-            title: str = titles[l][idx]
-            display_item(axe, img, seg, title)
+            display_item(axe, img, seg)
+
+            if j == 0:
+                print(row_title[idx])
+                axe.text(-30, seg.shape[1]//2, row_title[idx], rotation=90,
+                         verticalalignment='center', fontsize=14)
+            if i == 0:
+                axe.set_title(column_title[j])
 
     fig.show()
     plt.show()
 
 
-def get_image_lists(img_source: str, folders: List[str], id_regex: str) -> Tuple[List[str], List[List[str]]]:
+def get_image_lists(img_source: str, folders: List[str], id_regex: str) \
+                    -> Tuple[List[str], List[List[str]], List[str]]:
     path_source: Path = Path(img_source)
     background_names: List[str] = sorted(map(str, path_source.glob("*")))
     segmentation_names: List[List[str]] = [sorted(map(str, Path(folder).glob("*"))) for folder in folders]
@@ -86,7 +92,7 @@ def get_image_lists(img_source: str, folders: List[str], id_regex: str) -> Tuple
             print(f"Folder '{folder}': {len(names)} imgs")
             pprint(names[:10])
 
-    return background_names, segmentation_names
+    return background_names, segmentation_names, ids
 
 
 def get_args() -> argparse.Namespace:
@@ -118,25 +124,23 @@ def main() -> None:
 
     background_names: List[str]
     segmentation_names: List[List[str]]
-    background_names, segmentation_names = get_image_lists(args.img_source, args.folders, args.id_regex)
+    ids: List[str]
+    background_names, segmentation_names, ids = get_image_lists(args.img_source, args.folders, args.id_regex)
 
     if args.display_names is None:
-        display_names = [""] * len(args.folders)
+        display_names = [f for f in args.folders]
     else:
         assert(len(args.display_names) == len(args.folders))
         display_names = args.display_names
-
-    # fn_title: Callable[[str, int], str] = lambda s, _: "/".join(map(str, Path(s).parts[-2:]))
-    fn_title: Callable[[str, int], str] = lambda s, i: display_names[i] + " " + re.match(args.id_regex, s).group(1)
-
-    titles = [[fn_title(path, i) for path in l] for i, l in enumerate(segmentation_names)]
 
     order: List[int] = list(range(len(background_names)))
     order = np.random.permutation(order)
     for a in range(0, len(background_names), args.n):
         idx: List[int] = order[a:a+args.n]
         assert(len(idx == args.n))
-        display(background_names, segmentation_names, idx, titles, args.crop)
+        display(background_names, segmentation_names, idx,
+                display_names, ids,
+                args.crop)
 
 
 if __name__ == "__main__":
