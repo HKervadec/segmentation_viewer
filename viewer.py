@@ -15,7 +15,10 @@ from skimage.transform import resize
 
 
 def extract(pattern: str, string: str) -> str:
-    return re.match(pattern, string).group(1)
+    try:
+        return re.match(pattern, string).group(1)
+    except AttributeError:  # id not found
+        return None
 
 
 def display_item(axe, img: np.ndarray, mask: np.ndarray, title=""):
@@ -61,8 +64,29 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
     plt.show()
 
 
-def get_image_lists(img_source: str, folders: List[str]) -> Tuple[List[str], List[List[str]]]:
-    pass
+def get_image_lists(img_source: str, folders: List[str], id_regex: str) -> Tuple[List[str], List[List[str]]]:
+    path_source: Path = Path(img_source)
+    background_names: List[str] = sorted(map(str, path_source.glob("*")))
+    segmentation_names: List[List[str]] = [sorted(map(str, Path(folder).glob("*"))) for folder in folders]
+
+    extracter: Callable[[str], str] = partial(extract, id_regex)
+    background_names = [bg for bg in background_names if extracter(bg) is not None]
+    segmentation_names = [[sn for sn in sl if extracter(sn) is not None] for sl in segmentation_names]
+
+    ids: List[str] = list(map(extracter, background_names))
+
+    for names, folder in zip(segmentation_names, folders):
+        try:
+            assert(len(background_names) == len(names))
+            assert(ids == list(map(extracter, names)))
+        except AssertionError:
+            print(f"Error verifying content for folder {folder}")
+            print(f"Background folder '{img_source}': {len(background_names)} imgs")
+            pprint(background_names[:10])
+            print(f"Folder '{folder}': {len(names)} imgs")
+            pprint(names[:10])
+
+    return background_names, segmentation_names
 
 
 def get_args() -> argparse.Namespace:
@@ -92,24 +116,9 @@ def main() -> None:
     args: argparse.Namespace = get_args()
     np.random.seed(args.seed)
 
-    img_source: Path = Path(args.img_source)
-    background_names: List[str] = sorted(map(str, img_source.glob("*.png")))
-    segmentation_names: List[List[str]] = [sorted(map(str, Path(folder).glob("*.png"))) for folder in args.folders]
-
-    extracter: Callable[[str], str] = partial(extract, args.id_regex)
-    ids: List[str] = list(map(extracter, background_names))
-
-    for names, folder in zip(segmentation_names, args.folders):
-        try:
-            assert(len(background_names) == len(names))
-            assert(ids == list(map(extracter, names)))
-        except AssertionError:
-            print(f"Error verifying content for folder {folder}")
-            print(f"Background folder '{img_source}': {len(background_names)} imgs")
-            pprint(background_names[:10])
-            print(f"Folder '{folder}': {len(names)} imgs")
-            pprint(names[:10])
-    del ids
+    background_names: List[str]
+    segmentation_names: List[List[str]]
+    background_names, segmentation_names = get_image_lists(args.img_source, args.folders, args.id_regex)
 
     if args.display_names is None:
         display_names = [""] * len(args.folders)
