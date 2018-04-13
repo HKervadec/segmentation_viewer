@@ -1,7 +1,6 @@
 #!/usr/bin/env python3.6
 
 import re
-import random
 import argparse
 from math import ceil
 from pathlib import Path
@@ -89,9 +88,9 @@ def get_args() -> argparse.Namespace:
     return args
 
 
-if __name__ == "__main__":
+def main() -> None:
     args: argparse.Namespace = get_args()
-    random.seed(args.seed)
+    np.random.seed(args.seed)
 
     img_source: Path = Path(args.img_source)
     background_names: List[str] = sorted(map(str, img_source.glob("*.png")))
@@ -124,5 +123,12 @@ if __name__ == "__main__":
     titles = [[fn_title(path, i) for path in l] for i, l in enumerate(segmentation_names)]
 
     order: List[int] = list(range(len(background_names)))
-    while True:
-        display(background_names, segmentation_names, random.sample(order, args.n), titles, args.crop)
+    order = np.random.permutation(order)
+    for a in range(0, len(background_names), args.n):
+        idx: List[int] = order[a:a+args.n]
+        assert(len(idx == args.n))
+        display(background_names, segmentation_names, idx, titles, args.crop)
+
+
+if __name__ == "__main__":
+    main()
