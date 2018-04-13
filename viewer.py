@@ -7,7 +7,7 @@ from math import ceil
 from pathlib import Path
 from pprint import pprint
 from functools import partial
-from typing import List, Callable
+from typing import Callable, List, Tuple
 
 import numpy as np
 from skimage.io import imread
@@ -24,9 +24,12 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray, title=""):
     try:
         assert(img.shape == m.shape)
     except AssertionError:
-        print(title)
-        print(img.shape, m.shape)
-        raise
+        # print(title)
+        # print(img.shape, m.shape)
+        # raise
+
+        # Some grayscale mask are sometimes loaded with 3 channel
+        m = m[:, :, 0]
 
     axe.imshow(img, cmap="gray")
     axe.set_title(title)
@@ -35,22 +38,32 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray, title=""):
 
 
 def display(background_names: List[str], segmentation_names: List[List[str]],
-            indexes: List[int], titles: List[List[str]]) -> None:
+            indexes: List[int], titles: List[List[str]], crop: int) -> None:
     rn: int = int(ceil(len(indexes) ** .5))
 
     fig, axes = plt.subplots(nrows=rn, ncols=rn * len(segmentation_names))
 
     for i, idx in enumerate(indexes):
         img: np.ndarray = imread(background_names[idx])
+        if crop > 0:
+            img = img[crop:-crop, crop:-crop]
 
         for l, names in enumerate(segmentation_names):
             axe_id = len(segmentation_names) * i + l
             axe = axes.flatten()[axe_id]
+
             seg: np.ndarray = imread(names[idx])
+            if crop > 0:
+                seg = seg[crop:-crop, crop:-crop]
+
             title: str = titles[l][idx]
             display_item(axe, img, seg, title)
 
     plt.show()
+
+
+def get_image_lists(img_source: str, folders: List[str]) -> Tuple[List[str], List[List[str]]]:
+    pass
 
 
 def get_args() -> argparse.Namespace:
@@ -69,6 +82,8 @@ def get_args() -> argparse.Namespace:
                         help="The folder containing the source segmentations.")
     parser.add_argument("--display_names", type=str, nargs='*',
                         help="The display name for the folders in the viewer")
+    parser.add_argument("--crop", type=int, default=0,
+                        help="The number of pixels to remove from each border")
     args = parser.parse_args()
 
     return args
@@ -110,4 +125,4 @@ if __name__ == "__main__":
 
     order: List[int] = list(range(len(background_names)))
     while True:
-        display(background_names, segmentation_names, random.sample(order, args.n), titles)
+        display(background_names, segmentation_names, random.sample(order, args.n), titles, args.crop)
