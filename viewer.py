@@ -9,8 +9,9 @@ from functools import partial
 from typing import Callable, List, Tuple
 
 import numpy as np
-from skimage.io import imread
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+from skimage.io import imread
 from skimage.transform import resize
 
 
@@ -41,9 +42,8 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray, title=""):
 
 def display(background_names: List[str], segmentation_names: List[List[str]],
             indexes: List[int], titles: List[List[str]], crop: int) -> None:
-    rn: int = int(ceil(len(indexes) ** .5))
-
-    fig, axes = plt.subplots(nrows=rn, ncols=rn * len(segmentation_names))
+    fig = plt.figure()
+    gs = gridspec.GridSpec(len(indexes), len(segmentation_names))
 
     for i, idx in enumerate(indexes):
         img: np.ndarray = imread(background_names[idx])
@@ -51,8 +51,7 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
             img = img[crop:-crop, crop:-crop]
 
         for l, names in enumerate(segmentation_names):
-            axe_id = len(segmentation_names) * i + l
-            axe = axes.flatten()[axe_id]
+            axe = fig.add_subplot(gs[i, l])
 
             seg: np.ndarray = imread(names[idx])
             if crop > 0:
@@ -61,6 +60,7 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
             title: str = titles[l][idx]
             display_item(axe, img, seg, title)
 
+    fig.show()
     plt.show()
 
 
