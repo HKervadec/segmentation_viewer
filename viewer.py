@@ -21,7 +21,7 @@ def extract(pattern: str, string: str) -> str:
         return None
 
 
-def display_item(axe, img: np.ndarray, mask: np.ndarray):
+def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool):
     m = resize(mask, img.shape, mode='constant', preserve_range=True)
     try:
         assert(img.shape == m.shape)
@@ -34,13 +34,17 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray):
         m = m[:, :, 0]
 
     axe.imshow(img, cmap="gray")
-    axe.contour(m, cmap='rainbow')
+
+    if contour:
+        axe.contour(m, cmap='rainbow')
+    else:
+        axe.imshow(m, alpha=.5)
     axe.axis('off')
 
 
 def display(background_names: List[str], segmentation_names: List[List[str]],
             indexes: List[int], column_title: List[str], row_title: List[str],
-            crop: int) -> None:
+            crop: int, contour: bool) -> None:
     fig = plt.figure()
     gs = gridspec.GridSpec(len(indexes), len(segmentation_names))
 
@@ -56,11 +60,11 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
             if crop > 0:
                 seg = seg[crop:-crop, crop:-crop]
 
-            display_item(axe, img, seg)
+            display_item(axe, img, seg, contour)
 
             if j == 0:
                 print(row_title[idx])
-                axe.text(-30, seg.shape[1]//2, row_title[idx], rotation=90,
+                axe.text(-30, seg.shape[1] // 2, row_title[idx], rotation=90,
                          verticalalignment='center', fontsize=14)
             if i == 0:
                 axe.set_title(column_title[j])
@@ -69,8 +73,7 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
     plt.show()
 
 
-def get_image_lists(img_source: str, folders: List[str], id_regex: str) \
-                    -> Tuple[List[str], List[List[str]], List[str]]:
+def get_image_lists(img_source: str, folders: List[str], id_regex: str) -> Tuple[List[str], List[List[str]], List[str]]:
     path_source: Path = Path(img_source)
     background_names: List[str] = sorted(map(str, path_source.glob("*")))
     segmentation_names: List[List[str]] = [sorted(map(str, Path(folder).glob("*"))) for folder in folders]
@@ -113,6 +116,8 @@ def get_args() -> argparse.Namespace:
                         help="The display name for the folders in the viewer")
     parser.add_argument("--crop", type=int, default=0,
                         help="The number of pixels to remove from each border")
+    parser.add_argument("--no_contour", action="store_true",
+                        help="Do not draw a contour but a transparent overlap instead.")
     args = parser.parse_args()
 
     return args
@@ -136,11 +141,11 @@ def main() -> None:
     order: List[int] = list(range(len(background_names)))
     order = np.random.permutation(order)
     for a in range(0, len(background_names), args.n):
-        idx: List[int] = order[a:a+args.n]
+        idx: List[int] = order[a:a + args.n]
         assert(len(idx == args.n))
         display(background_names, segmentation_names, idx,
                 display_names, ids,
-                args.crop)
+                args.crop, not args.no_contour)
 
 
 if __name__ == "__main__":
