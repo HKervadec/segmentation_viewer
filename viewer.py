@@ -5,7 +5,7 @@ import argparse
 from pathlib import Path
 from pprint import pprint
 from functools import partial
-from typing import Callable, List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -44,12 +44,13 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool):
 
 def display(background_names: List[str], segmentation_names: List[List[str]],
             indexes: List[int], column_title: List[str], row_title: List[str],
-            crop: int, contour: bool) -> None:
+            crop: int, contour: bool, remap: Dict) -> None:
     fig = plt.figure()
     gs = gridspec.GridSpec(len(indexes), len(segmentation_names))
 
     for i, idx in enumerate(indexes):
         img: np.ndarray = imread(background_names[idx])
+
         if crop > 0:
             img = img[crop:-crop, crop:-crop]
 
@@ -59,6 +60,9 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
             seg: np.ndarray = imread(names[idx])
             if crop > 0:
                 seg = seg[crop:-crop, crop:-crop]
+            if remap:
+                for k, v in remap.items():
+                    seg[seg == k] = v
 
             display_item(axe, img, seg, contour)
 
@@ -118,6 +122,8 @@ def get_args() -> argparse.Namespace:
                         help="The number of pixels to remove from each border")
     parser.add_argument("--no_contour", action="store_true",
                         help="Do not draw a contour but a transparent overlap instead.")
+    parser.add_argument("--remap", type=str, default="{}",
+                        help="Remap some mask values if needed. Useful to suppress some classes.")
     args = parser.parse_args()
 
     return args
@@ -135,7 +141,7 @@ def main() -> None:
     if args.display_names is None:
         display_names = [f for f in args.folders]
     else:
-        assert(len(args.display_names) == len(args.folders))
+        assert len(args.display_names) == len(args.folders), (args.display_names, args.folders)
         display_names = args.display_names
 
     order: List[int] = list(range(len(background_names)))
@@ -145,7 +151,7 @@ def main() -> None:
         assert(len(idx == args.n))
         display(background_names, segmentation_names, idx,
                 display_names, ids,
-                args.crop, not args.no_contour)
+                args.crop, not args.no_contour, eval(args.remap))
 
 
 if __name__ == "__main__":
