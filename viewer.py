@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from skimage.io import imread
 from skimage.transform import resize
+from matplotlib.widgets import Button
 
 
 def extract(pattern: str, string: str) -> str:
@@ -44,8 +45,9 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool):
 
 def display(background_names: List[str], segmentation_names: List[List[str]],
             indexes: List[int], column_title: List[str], row_title: List[str],
-            crop: int, contour: bool, remap: Dict) -> None:
-    fig = plt.figure()
+            crop: int, contour: bool, remap: Dict, fig=None) -> None:
+    if not fig:
+        fig = plt.figure()
     gs = gridspec.GridSpec(len(indexes), len(segmentation_names))
 
     for i, idx in enumerate(indexes):
@@ -73,8 +75,10 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
             if i == 0:
                 axe.set_title(column_title[j])
 
+    # fig.show()
+    # plt.show()
+    # plt.draw()
     fig.show()
-    plt.show()
 
 
 def get_image_lists(img_source: str, folders: List[str], id_regex: str) -> Tuple[List[str], List[List[str]], List[str]]:
@@ -100,6 +104,28 @@ def get_image_lists(img_source: str, folders: List[str], id_regex: str) -> Tuple
             pprint(names[:10])
 
     return background_names, segmentation_names, ids
+
+
+class EventHandler(object):
+    def __init__(self, order: List[int], n: int, draw_function: Callable, fig):
+        self.order: List[int] = order
+        self.draw_function: Callable = draw_function
+        self.n = n
+        self.i = 1
+        self.fig = fig
+
+    def next(self, event):
+        a = self.i * self.n
+        self.i += 1
+        print("pouet")
+
+        self.fig.clear()
+
+        idx: List[int] = self.order[a:a + self.n]
+
+        self.draw_function(idx, fig=self.fig)
+
+        self.fig.canvas.draw()
 
 
 def get_args() -> argparse.Namespace:
@@ -146,12 +172,29 @@ def main() -> None:
 
     order: List[int] = list(range(len(background_names)))
     order = np.random.permutation(order)
-    for a in range(0, len(background_names), args.n):
-        idx: List[int] = order[a:a + args.n]
-        assert(len(idx == args.n))
-        display(background_names, segmentation_names, idx,
-                display_names, ids,
-                args.crop, not args.no_contour, eval(args.remap))
+
+    # fig, ax = plt.subplots()
+    # plt.subplots_adjust(bottom=0.2)
+
+    draw_function = partial(display, background_names, segmentation_names,
+                            column_title=display_names,
+                            row_title=ids,
+                            crop=args.crop,
+                            contour=not args.no_contour,
+                            remap=eval(args.remap))
+
+    fig = plt.figure()
+    event_handler = EventHandler(order, args.n, draw_function, fig)
+    fig.canvas.mpl_connect('button_press_event', event_handler.next)
+
+    draw_function(order[:args.n], fig=fig)
+    plt.show()
+
+    # for a in range(0, len(background_names), args.n):
+    #     idx: List[int] = order[a:a + args.n]
+    #     assert(len(idx == args.n))
+    #     draw_function(idx)
+    #     plt.show()
 
 
 if __name__ == "__main__":
