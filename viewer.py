@@ -111,14 +111,22 @@ class EventHandler(object):
         self.order: List[int] = order
         self.draw_function: Callable = draw_function
         self.n = n
-        self.i = 1
+        self.i = 0
         self.fig = fig
 
-    def next(self, event):
-        a = self.i * self.n
-        self.i += 1
-        print("pouet")
+    def __call__(self, event):
+        print("pouet", event)
 
+        if event.button == 1:  # next
+            self.i += 1
+        elif event.button == 3:  # prev
+            self.i -= 1
+
+        a = self.i * self.n
+
+        self.redraw(a)
+
+    def redraw(self, a):
         self.fig.clear()
 
         idx: List[int] = self.order[a:a + self.n]
@@ -173,9 +181,6 @@ def main() -> None:
     order: List[int] = list(range(len(background_names)))
     order = np.random.permutation(order)
 
-    # fig, ax = plt.subplots()
-    # plt.subplots_adjust(bottom=0.2)
-
     draw_function = partial(display, background_names, segmentation_names,
                             column_title=display_names,
                             row_title=ids,
@@ -185,7 +190,7 @@ def main() -> None:
 
     fig = plt.figure()
     event_handler = EventHandler(order, args.n, draw_function, fig)
-    fig.canvas.mpl_connect('button_press_event', event_handler.next)
+    fig.canvas.mpl_connect('button_press_event', event_handler)
 
     draw_function(order[:args.n], fig=fig)
     plt.show()
