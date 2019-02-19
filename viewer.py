@@ -23,9 +23,9 @@ def extract(pattern: str, string: str) -> str:
 
 
 def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool):
-    m = resize(mask, img.shape, mode='constant', preserve_range=True)
+    m = resize(mask, img.shape[:2], mode='constant', preserve_range=True)
     try:
-        assert(img.shape == m.shape)
+        assert len(img.shape) != len(mask.shape)
     except AssertionError:
         # print(title)
         # print(img.shape, m.shape)
