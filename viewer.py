@@ -22,30 +22,32 @@ def extract(pattern: str, string: str) -> str:
         return None
 
 
-def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool):
+def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool, args):
     m = resize(mask, img.shape[:2], mode='constant', preserve_range=True)
-    try:
-        assert len(img.shape) == len(mask.shape)
-    except AssertionError:
-        # print(title)
-        # print(img.shape, m.shape)
-        # raise
+    # try:
+    #     assert len(img.shape) == len(m.shape)
+    # except AssertionError:
+    #     # print(title)
+    #     print(img.shape, m.shape)
+    #     # raise
 
-        # Some grayscale mask are sometimes loaded with 3 channel
-        m = m[:, :, 0]
+    #     # Some grayscale mask are sometimes loaded with 3 channel
+    #     # m = m[:, :, 0]
+    #     m = m[..., None]
+    #     # img = np.moveaxis(img, -1, 0)
 
     axe.imshow(img, cmap="gray")
 
     if contour:
         axe.contour(m, cmap='rainbow')
     else:
-        axe.imshow(m, alpha=.5)
+        axe.imshow(m, cmap='rainbow', alpha=args.alpha, vmin=0, vmax=args.C)
     axe.axis('off')
 
 
 def display(background_names: List[str], segmentation_names: List[List[str]],
             indexes: List[int], column_title: List[str], row_title: List[str],
-            crop: int, contour: bool, remap: Dict, fig=None) -> None:
+            crop: int, contour: bool, remap: Dict, fig=None, args=None) -> None:
     if not fig:
         fig = plt.figure()
     gs = gridspec.GridSpec(len(indexes), len(segmentation_names))
@@ -66,7 +68,7 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
                 for k, v in remap.items():
                     seg[seg == k] = v
 
-            display_item(axe, img, seg, contour)
+            display_item(axe, img, seg, contour, args)
 
             if j == 0:
                 print(row_title[idx])
@@ -156,6 +158,8 @@ def get_args() -> argparse.Namespace:
                         help="The number of pixels to remove from each border")
     parser.add_argument("--no_contour", action="store_true",
                         help="Do not draw a contour but a transparent overlap instead.")
+    parser.add_argument("--alpha", default=0.5, type=float)
+    parser.add_argument("-C", default=2)
     parser.add_argument("--remap", type=str, default="{}",
                         help="Remap some mask values if needed. Useful to suppress some classes.")
     args = parser.parse_args()
@@ -186,7 +190,8 @@ def main() -> None:
                             row_title=ids,
                             crop=args.crop,
                             contour=not args.no_contour,
-                            remap=eval(args.remap))
+                            remap=eval(args.remap),
+                            args=args)
 
     fig = plt.figure()
     event_handler = EventHandler(order, args.n, draw_function, fig)
