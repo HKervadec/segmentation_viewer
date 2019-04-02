@@ -51,7 +51,6 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
             crop: int, contour: bool, remap: Dict, fig=None, args=None) -> None:
     if not fig:
         fig = plt.figure()
-    # gs = gridspec.GridSpec(len(indexes), len(segmentation_names))
     grid = ImageGrid(fig, 111,
                      nrows_ncols=(len(indexes), len(segmentation_names)),
                      axes_pad=0.05,
@@ -68,9 +67,7 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
 
         for j, names in enumerate(segmentation_names):
             ax_id = len(segmentation_names) * i + j
-            # ax_id = len(indexes) * i + j
             axe = grid[ax_id]
-            # axe = fig.add_subplot(gs[i, j])
 
             seg: np.ndarray = imread(names[idx])
             if crop > 0:
@@ -87,13 +84,6 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
                          verticalalignment='center', fontsize=14)
             if i == 0:
                 axe.set_title(column_title[j])
-
-    # fig.show()
-    # plt.show()
-    # plt.draw()
-    # fig.tight_layout()
-    # fig.show()
-    plt.show()
 
 
 def get_image_lists(img_source: str, folders: List[str], id_regex: str) -> Tuple[List[str], List[List[str]], List[str]]:
@@ -212,12 +202,6 @@ def main() -> None:
 
     draw_function(order[:args.n], fig=fig)
     plt.show()
-
-    # for a in range(0, len(background_names), args.n):
-    #     idx: List[int] = order[a:a + args.n]
-    #     assert(len(idx == args.n))
-    #     draw_function(idx)
-    #     plt.show()
 
 
 if __name__ == "__main__":
