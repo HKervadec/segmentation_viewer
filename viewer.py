@@ -120,8 +120,6 @@ class EventHandler(object):
         self.fig = fig
 
     def __call__(self, event):
-        print("pouet", event)
-
         if event.button == 1:  # next
             self.i += 1
         elif event.button == 3:  # prev
@@ -162,7 +160,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--no_contour", action="store_true",
                         help="Do not draw a contour but a transparent overlap instead.")
     parser.add_argument("--alpha", default=0.5, type=float)
-    parser.add_argument("-C", default=2)
+    parser.add_argument("-C", default=2, help="Number of classes. Useful when not all of them appear on each images.")
     parser.add_argument("--remap", type=str, default="{}",
                         help="Remap some mask values if needed. Useful to suppress some classes.")
     args = parser.parse_args()
