@@ -10,6 +10,7 @@ from typing import Callable, Dict, List, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib import cm
 from skimage.io import imread
 from skimage.transform import resize
 from matplotlib.widgets import Button
@@ -40,9 +41,9 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool, args):
     axe.imshow(img, cmap="gray")
 
     if contour:
-        axe.contour(m, cmap='rainbow')
+        axe.contour(m, cmap=args.cmap)
     else:
-        axe.imshow(m, cmap='rainbow', alpha=args.alpha, vmin=0, vmax=args.C)
+        axe.imshow(m, cmap=args.cmap, alpha=args.alpha, vmin=0, vmax=args.C)
     axe.axis('off')
 
 
@@ -161,6 +162,7 @@ def get_args() -> argparse.Namespace:
                         help="Do not draw a contour but a transparent overlap instead.")
     parser.add_argument("--alpha", default=0.5, type=float)
     parser.add_argument("-C", default=2, help="Number of classes. Useful when not all of them appear on each images.")
+    parser.add_argument("--cmap", default='rainbow', choices=list(cm.datad.keys()))
     parser.add_argument("--remap", type=str, default="{}",
                         help="Remap some mask values if needed. Useful to suppress some classes.")
     args = parser.parse_args()
