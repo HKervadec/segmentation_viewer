@@ -4,10 +4,9 @@ import re
 import argparse
 from pathlib import Path
 from pprint import pprint
-from itertools import repeat
 from functools import partial
 from collections import namedtuple
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,7 +14,6 @@ import matplotlib.gridspec as gridspec
 from matplotlib import cm
 from skimage.io import imread
 from skimage.transform import resize
-from matplotlib.widgets import Button
 from matplotlib.colors import ListedColormap
 
 
@@ -219,7 +217,8 @@ def get_args() -> argparse.Namespace:
                              Useful to reproduce the same outputs between runs.")
     parser.add_argument("--crop", type=int, default=0,
                         help="The number of pixels to remove from each border")
-    parser.add_argument("-C", type=int, default=2, help="Number of classes. Useful when not all of them appear on each images.")
+    parser.add_argument("-C", type=int, default=2,
+                        help="Number of classes. Useful when not all of them appear on each images.")
 
     parser.add_argument("--alpha", default=0.5, type=float)
 
