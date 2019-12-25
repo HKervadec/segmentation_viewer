@@ -4,9 +4,10 @@ import re
 import argparse
 from pathlib import Path
 from pprint import pprint
+from itertools import repeat
 from functools import partial
 from collections import namedtuple
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,9 +15,7 @@ import matplotlib.gridspec as gridspec
 from matplotlib import cm
 from skimage.io import imread
 from skimage.transform import resize
-import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
-# from mpl_toolkits.axes_grid1 import ImageGrid
 from matplotlib.colors import ListedColormap
 
 
@@ -60,7 +59,7 @@ classes = [
     CityscapesClass('train', 31, 16, 'vehicle', 7, True, False, (0, 80, 100)),
     CityscapesClass('motorcycle', 32, 17, 'vehicle', 7, True, False, (0, 0, 230)),
     CityscapesClass('bicycle', 33, 18, 'vehicle', 7, True, False, (119, 11, 32)),
-    CityscapesClass('license plate', -1, -1, 'vehicle', 7, False, True, (0, 0, 142)),
+    # CityscapesClass('license plate', -1, -1, 'vehicle', 7, False, True, (0, 0, 142)),
 ]
 
 
@@ -100,15 +99,30 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
             crop: int, contour: bool, remap: Dict, fig=None, args=None) -> None:
     if not fig:
         fig = plt.figure()
-    # grid = ImageGrid(fig, 111,
-    #                  nrows_ncols=(len(indexes), len(segmentation_names)),
-    #                  axes_pad=0.05,
-    #                  share_all=True,
-    #                  label_mode="L",
-    #                  aspect=True
-    #                  )
-    grid = gridspec.GridSpec(len(indexes), len(segmentation_names))
+    grid = gridspec.GridSpec(len(indexes) + args.legend, len(segmentation_names),
+                             height_ratios=[((0.9 + 0.1 * ~args.legend) / len(indexes))
+                                            for _ in range(len(indexes))] + ([0.1] if args.legend else []))
     grid.update(wspace=0.025, hspace=0.05)
+
+    names: List[str]
+    if args.cmap == 'cityscape':
+        colors = [tuple(c / 255 for c in e.color) for e in classes]
+        names = [e.name for e in classes]
+
+        cmap = ListedColormap(colors, 'cityscape')
+    else:
+        cmap = args.cmap
+        names = list(map(str, range(args.C)))
+
+    if args.legend:
+        ax = plt.subplot(grid[-1, :])
+
+        ax.bar(list(range(args.C)), [1] * args.C,
+               tick_label=names,
+               color=[cmap(v) for v in range(args.C)])
+
+        ax.set_xticklabels(names, rotation=60)
+        ax.set_title("Legend")
 
     for i, idx in enumerate(indexes):
         img: np.ndarray = imread(background_names[idx])
@@ -128,14 +142,6 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
                 for k, v in remap.items():
                     seg[seg == k] = v
 
-            if args.cmap == 'cityscape':
-                colors = [tuple(c / 255 for c in e.color) for e in classes]
-                names = [e.name for e in classes]
-
-                cmap = ListedColormap(colors, names)
-            else:
-                cmap = args.cmap
-
             display_item(axe, img, seg, contour, cmap, args)
 
             if j == 0:
@@ -144,6 +150,8 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
                          verticalalignment='center', fontsize=14)
             if i == 0:
                 axe.set_title(column_title[j])
+
+        fig.tight_layout()
 
 
 def get_image_lists(img_source: str, folders: List[str], id_regex: str) -> Tuple[List[str], List[List[str]], List[str]]:
@@ -201,13 +209,20 @@ class EventHandler(object):
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Display the requested data.")
-    parser.add_argument("-n", type=int, default=9,
-                        help="The number of images to sample per window.")
     parser.add_argument("--img_source", type=str, required=True,
                         help="The folder containing the images (background).")
+
+    parser.add_argument("-n", type=int, default=3,
+                        help="The number of images to sample per window.")
     parser.add_argument("--seed", type=int, default=0,
                         help="The seed for the number generator. Used to sample the images. \
                              Useful to reproduce the same outputs between runs.")
+    parser.add_argument("--crop", type=int, default=0,
+                        help="The number of pixels to remove from each border")
+    parser.add_argument("-C", type=int, default=2, help="Number of classes. Useful when not all of them appear on each images.")
+
+    parser.add_argument("--alpha", default=0.5, type=float)
+
     parser.add_argument("--id_regex", type=str, default=".*/(.*).png",
                         help="The regex to extract the image id from the images names \
                              Required to match the images between them.")
@@ -215,15 +230,15 @@ def get_args() -> argparse.Namespace:
                         help="The folder containing the source segmentations.")
     parser.add_argument("--display_names", type=str, nargs='*',
                         help="The display name for the folders in the viewer")
-    parser.add_argument("--crop", type=int, default=0,
-                        help="The number of pixels to remove from each border")
-    parser.add_argument("--no_contour", action="store_true",
-                        help="Do not draw a contour but a transparent overlap instead.")
-    parser.add_argument("--alpha", default=0.5, type=float)
-    parser.add_argument("-C", default=2, help="Number of classes. Useful when not all of them appear on each images.")
-    parser.add_argument("--cmap", default='rainbow', choices=list(cm.datad.keys()) + ['cityscape'])
     parser.add_argument("--remap", type=str, default="{}",
                         help="Remap some mask values if needed. Useful to suppress some classes.")
+
+    parser.add_argument("--no_contour", action="store_true",
+                        help="Do not draw a contour but a transparent overlap instead.")
+    parser.add_argument("--legend", action="store_true",
+                        help="When set, display the legend of the colors at the bottom")
+
+    parser.add_argument("--cmap", default='rainbow', choices=list(cm.datad.keys()) + ['cityscape'])
     args = parser.parse_args()
 
     return args
