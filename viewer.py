@@ -14,8 +14,9 @@ import matplotlib.gridspec as gridspec
 from matplotlib import cm
 from skimage.io import imread
 from skimage.transform import resize
+import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
-from mpl_toolkits.axes_grid1 import ImageGrid
+# from mpl_toolkits.axes_grid1 import ImageGrid
 from matplotlib.colors import ListedColormap
 
 
@@ -99,13 +100,15 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
             crop: int, contour: bool, remap: Dict, fig=None, args=None) -> None:
     if not fig:
         fig = plt.figure()
-    grid = ImageGrid(fig, 111,
-                     nrows_ncols=(len(indexes), len(segmentation_names)),
-                     axes_pad=0.05,
-                     share_all=True,
-                     label_mode="L",
-                     aspect=True
-                     )
+    # grid = ImageGrid(fig, 111,
+    #                  nrows_ncols=(len(indexes), len(segmentation_names)),
+    #                  axes_pad=0.05,
+    #                  share_all=True,
+    #                  label_mode="L",
+    #                  aspect=True
+    #                  )
+    grid = gridspec.GridSpec(len(indexes), len(segmentation_names))
+    grid.update(wspace=0.025, hspace=0.05)
 
     for i, idx in enumerate(indexes):
         img: np.ndarray = imread(background_names[idx])
@@ -115,7 +118,8 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
 
         for j, names in enumerate(segmentation_names):
             ax_id = len(segmentation_names) * i + j
-            axe = grid[ax_id]
+            # axe = grid[ax_id]
+            axe = plt.subplot(grid[ax_id])
 
             seg: np.ndarray = imread(names[idx])
             if crop > 0:
