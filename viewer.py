@@ -120,6 +120,8 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
                color=[cmap(v) for v in range(args.C)])
 
         ax.set_xticklabels(names, rotation=60)
+        ax.set_xlim([-0.5, args.C - 0.5])
+        ax.get_yaxis().set_visible(False)
         ax.set_title("Legend")
 
     for i, idx in enumerate(indexes):
