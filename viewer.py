@@ -57,6 +57,8 @@ classes = [
     CityscapesClass('train', 31, 16, 'vehicle', 7, True, False, (0, 80, 100)),
     CityscapesClass('motorcycle', 32, 17, 'vehicle', 7, True, False, (0, 0, 230)),
     CityscapesClass('bicycle', 33, 18, 'vehicle', 7, True, False, (119, 11, 32)),
+
+    CityscapesClass('gta5thing', 34, 34, 'void', 0, False, True, (255, 255, 255))
     # CityscapesClass('license plate', -1, -1, 'vehicle', 7, False, True, (0, 0, 142)),
 ]
 
