@@ -9,6 +9,7 @@ from collections import namedtuple
 from typing import Callable, Dict, List, Tuple
 
 import numpy as np
+import matplotlib.cm
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib import cm
@@ -22,7 +23,7 @@ from matplotlib.colors import ListedColormap
 CityscapesClass = namedtuple('CityscapesClass', ['name', 'id', 'train_id', 'category', 'category_id',
                              'has_instances', 'ignore_in_eval', 'color'])
 
-classes = [
+city_classes = [
     CityscapesClass('unlabeled', 0, 255, 'void', 0, False, True, (0, 0, 0)),
     CityscapesClass('ego vehicle', 1, 255, 'void', 0, False, True, (0, 0, 0)),
     CityscapesClass('rectification border', 2, 255, 'void', 0, False, True, (0, 0, 0)),
@@ -106,20 +107,22 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
 
     names: List[str]
     if args.cmap == 'cityscape':
-        colors = [tuple(c / 255 for c in e.color) for e in classes]
-        names = [e.name for e in classes]
+        colors = [tuple(c / 255 for c in e.color) for e in city_classes]
+        names = [e.name for e in city_classes]
 
         cmap = ListedColormap(colors, 'cityscape')
     else:
-        cmap = args.cmap
-        names = list(map(str, range(args.C)))
+        # cmap = args.cmap
+        cmap = matplotlib.cm.get_cmap(args.cmap)
+        names = list(map(str, range(args.C))) if not args.class_names else args.class_names
+        assert len(names) == args.C
 
     if args.legend:
         ax = plt.subplot(grid[-1, :])
 
         ax.bar(list(range(args.C)), [1] * args.C,
                tick_label=names,
-               color=[cmap(v) for v in range(args.C)])
+               color=[cmap(v / args.C) for v in range(args.C)])
 
         ax.set_xticklabels(names, rotation=60)
         ax.set_xlim([-0.5, args.C - 0.5])
@@ -222,7 +225,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--crop", type=int, default=0,
                         help="The number of pixels to remove from each border")
     parser.add_argument("-C", type=int, default=2,
-                        help="Number of classes. Useful when not all of them appear on each images.")
+                        help="Number of city_classes. Useful when not all of them appear on each images.")
 
     parser.add_argument("--alpha", default=0.5, type=float)
 
@@ -233,8 +236,9 @@ def get_args() -> argparse.Namespace:
                         help="The folder containing the source segmentations.")
     parser.add_argument("--display_names", type=str, nargs='*',
                         help="The display name for the folders in the viewer")
+    parser.add_argument("--class_names", type=str, nargs='*')
     parser.add_argument("--remap", type=str, default="{}",
-                        help="Remap some mask values if needed. Useful to suppress some classes.")
+                        help="Remap some mask values if needed. Useful to suppress some city_classes.")
 
     parser.add_argument("--no_contour", action="store_true",
                         help="Do not draw a contour but a transparent overlap instead.")
