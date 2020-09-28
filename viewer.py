@@ -89,9 +89,9 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool, cmap,
     axe.imshow(img, cmap="gray")
 
     if contour:
-        axe.contour(m, cmap=cmap)
+        axe.contour(m, cmap=cmap, interpolation='nearest')
     else:
-        axe.imshow(m, cmap=cmap, alpha=args.alpha, vmin=0, vmax=args.C)
+        axe.imshow(m, cmap=cmap, interpolation='nearest', alpha=args.alpha, vmin=0, vmax=args.C)
     axe.axis('off')
 
 
