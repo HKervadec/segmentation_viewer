@@ -6,7 +6,7 @@ from pathlib import Path
 from pprint import pprint
 from functools import partial
 from collections import namedtuple
-from typing import Callable
+from typing import Callable, Optional
 
 import numpy as np
 import matplotlib as mpl
@@ -64,11 +64,11 @@ city_classes = [
 ]
 
 
-def extract(pattern: str, string: str) -> str:
-        try:
-                return re.match(pattern, string).group(1)
-        except AttributeError:  # id not found
-                return None
+def extract(pattern: str, string: str) -> Optional[str]:
+        if m_ := re.match(pattern, string):
+                return m_.group(1)
+
+        return None  # ID not found
 
 
 def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool, cmap,
