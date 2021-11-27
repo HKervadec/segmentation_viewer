@@ -13,10 +13,9 @@ import matplotlib as mpl
 import matplotlib.cm
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from matplotlib import cm
 from skimage.io import imread
 from skimage.transform import resize
-from matplotlib.colors import listedColormap
+from matplotlib.colors import ListedColormap
 
 
 # Based on torchvision, itself based on
@@ -128,7 +127,7 @@ def display(background_names: list[str], segmentation_names: list[list[str]],
         colors = [tuple(c / 255 for c in e.color) for e in city_classes]
         names = [e.name for e in city_classes]
 
-        cmap = listedColormap(colors, 'cityscape')
+        cmap = ListedColormap(colors, 'cityscape')
     else:
         # cmap = args.cmap
         cmap = matplotlib.cm.get_cmap(args.cmap)
@@ -233,7 +232,7 @@ class EventHandler(object):
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Display the requested data.")
     parser.add_argument("--img_source", type=str, required=True,
-                        help="The folder containing the images (background).")
+                        help="The folder containing the images (display background).")
 
     parser.add_argument("-n", type=int, default=3,
                         help="The number of images to sample per window.")
@@ -241,29 +240,33 @@ def get_args() -> argparse.Namespace:
                         help="The seed for the number generator. Used to sample the images. \
                              Useful to reproduce the same outputs between runs.")
     parser.add_argument("--crop", type=int, default=0,
-                        help="The number of pixels to remove from each border")
+                        help="The number of pixels to remove from each border.")
     parser.add_argument("-C", type=int, default=2,
-                        help="Number of city_classes. Useful when not all of them appear on each images.")
+                        help="""Number of classes. Useful when not all of them appear on each images.
+(e.g., 5 classes segmentation but samples contains only classes 0 1 3.)""")
 
     parser.add_argument("--alpha", default=0.5, type=float)
 
     parser.add_argument("--id_regex", type=str, default=".*/(.*).png",
-                        help="The regex to extract the image id from the images names \
-                             Required to match the images between them.")
+                        help="""The regex to extract the image id from the images names.
+Required to match the images between them.
+Can easily be modified to also handle .jpg""")
     parser.add_argument("folders", type=str, nargs='*',
                         help="The folder containing the source segmentations.")
     parser.add_argument("--display_names", type=str, nargs='*',
-                        help="The display name for the folders in the viewer")
-    parser.add_argument("--class_names", type=str, nargs='*')
+                        help="""The display name for the folders in the viewer.
+If not set, will use the whole folder name.""")
+    parser.add_argument("--class_names", type=str, nargs='*',
+                        help="Give names to classes, useful for multi-organs segmentation.")
     parser.add_argument("--remap", type=str, default="{}",
-                        help="Remap some mask values if needed. Useful to suppress some city_classes.")
+                        help="Remap some mask values if needed. Useful to suppress some classes.")
 
     parser.add_argument("--no_contour", action="store_true",
                         help="Do not draw a contour but a transparent overlap instead.")
     parser.add_argument("--legend", action="store_true",
                         help="When set, display the legend of the colors at the bottom")
 
-    parser.add_argument("--cmap", default='rainbow', choices=list(cm.datad.keys()) + ['cityscape'])
+    parser.add_argument("--cmap", default='rainbow', choices=list(matplotlib.cm.datad.keys()) + ['cityscape'])
     args = parser.parse_args()
 
     return args
