@@ -6,7 +6,7 @@ from pathlib import Path
 from pprint import pprint
 from functools import partial
 from collections import namedtuple
-from typing import Callable, Dict, List, Tuple
+from typing import Callable
 
 import numpy as np
 import matplotlib as mpl
@@ -16,7 +16,7 @@ import matplotlib.gridspec as gridspec
 from matplotlib import cm
 from skimage.io import imread
 from skimage.transform import resize
-from matplotlib.colors import ListedColormap
+from matplotlib.colors import listedColormap
 
 
 # Based on torchvision, itself based on
@@ -113,9 +113,9 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool, cmap,
     axe.axis('off')
 
 
-def display(background_names: List[str], segmentation_names: List[List[str]],
-            indexes: List[int], column_title: List[str], row_title: List[str],
-            crop: int, contour: bool, remap: Dict, fig=None, args=None) -> None:
+def display(background_names: list[str], segmentation_names: list[list[str]],
+            indexes: list[int], column_title: list[str], row_title: list[str],
+            crop: int, contour: bool, remap: dict, fig=None, args=None) -> None:
     if not fig:
         fig = plt.figure()
     grid = gridspec.GridSpec(len(indexes) + args.legend, len(segmentation_names),
@@ -123,12 +123,12 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
                                             for _ in range(len(indexes))] + ([0.1] if args.legend else []))
     grid.update(wspace=0.025, hspace=0.05)
 
-    names: List[str]
+    names: list[str]
     if args.cmap == 'cityscape':
         colors = [tuple(c / 255 for c in e.color) for e in city_classes]
         names = [e.name for e in city_classes]
 
-        cmap = ListedColormap(colors, 'cityscape')
+        cmap = listedColormap(colors, 'cityscape')
     else:
         # cmap = args.cmap
         cmap = matplotlib.cm.get_cmap(args.cmap)
@@ -177,16 +177,16 @@ def display(background_names: List[str], segmentation_names: List[List[str]],
         fig.tight_layout()
 
 
-def get_image_lists(img_source: str, folders: List[str], id_regex: str) -> Tuple[List[str], List[List[str]], List[str]]:
+def get_image_lists(img_source: str, folders: list[str], id_regex: str) -> tuple[list[str], list[list[str]], list[str]]:
     path_source: Path = Path(img_source)
-    background_names: List[str] = sorted(map(str, path_source.glob("*")))
-    segmentation_names: List[List[str]] = [sorted(map(str, Path(folder).glob("*"))) for folder in folders]
+    background_names: list[str] = sorted(map(str, path_source.glob("*")))
+    segmentation_names: list[list[str]] = [sorted(map(str, Path(folder).glob("*"))) for folder in folders]
 
     extracter: Callable[[str], str] = partial(extract, id_regex)
     background_names = [bg for bg in background_names if extracter(bg) is not None]
     segmentation_names = [[sn for sn in sl if extracter(sn) is not None] for sl in segmentation_names]
 
-    ids: List[str] = list(map(extracter, background_names))
+    ids: list[str] = list(map(extracter, background_names))
 
     for names, folder in zip(segmentation_names, folders):
         try:
@@ -203,8 +203,8 @@ def get_image_lists(img_source: str, folders: List[str], id_regex: str) -> Tuple
 
 
 class EventHandler(object):
-    def __init__(self, order: List[int], n: int, draw_function: Callable, fig):
-        self.order: List[int] = order
+    def __init__(self, order: list[int], n: int, draw_function: Callable, fig):
+        self.order: list[int] = order
         self.draw_function: Callable = draw_function
         self.n = n
         self.i = 0
@@ -223,7 +223,7 @@ class EventHandler(object):
     def redraw(self, a):
         self.fig.clear()
 
-        idx: List[int] = self.order[a:a + self.n]
+        idx: list[int] = self.order[a:a + self.n]
 
         self.draw_function(idx, fig=self.fig)
 
@@ -274,9 +274,9 @@ def main() -> None:
     np.random.seed(args.seed)
     mpl.rcParams['image.interpolation'] = 'none'
 
-    background_names: List[str]
-    segmentation_names: List[List[str]]
-    ids: List[str]
+    background_names: list[str]
+    segmentation_names: list[list[str]]
+    ids: list[str]
     background_names, segmentation_names, ids = get_image_lists(args.img_source, args.folders, args.id_regex)
 
     if args.display_names is None:
@@ -285,8 +285,8 @@ def main() -> None:
         assert len(args.display_names) == len(args.folders), (args.display_names, args.folders)
         display_names = args.display_names
 
-    order: List[int] = list(range(len(background_names)))
-    order = np.random.permutation(order)
+    order: list[int] = list(range(len(background_names)))
+    order = np.random.permutation(order)  # type: ignore
 
     draw_function = partial(display, background_names, segmentation_names,
                             column_title=display_names,
