@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.8
+#!/usr/bin/env python3.9
 
 import re
 import argparse
@@ -9,6 +9,7 @@ from collections import namedtuple
 from typing import Callable, Dict, List, Tuple
 
 import numpy as np
+import matplotlib as mpl
 import matplotlib.cm
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -73,7 +74,17 @@ def extract(pattern: str, string: str) -> str:
 
 def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool, cmap,
                  args):
-    m = resize(mask, img.shape[:2], mode='constant', preserve_range=True)
+    if mask.shape != img.shape[:2]:
+        assert mask.dtype == np.uint8
+        m = resize(mask, img.shape[:2],
+                   order=0,
+                   mode='constant',
+                   preserve_range=True,
+                   anti_aliasing=False).astype(np.uint8)
+        assert set(np.unique(mask)) == set(np.unique(m))
+    else:
+        m = mask
+
     # try:
     #     assert len(img.shape) == len(m.shape)
     # except AssertionError:
@@ -86,12 +97,19 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool, cmap,
     #     m = m[..., None]
     #     # img = np.moveaxis(img, -1, 0)
 
+    assert m.dtype == np.uint8
+    assert set(np.unique(m)) <= set(range(args.C)), (np.unique(m),
+                                                     np.unique(mask),
+                                                     args.C,
+                                                     m.dtype,
+                                                     mask.dtype)
+
     axe.imshow(img, cmap="gray")
 
     if contour:
-        axe.contour(m, cmap=cmap, interpolation='nearest')
+        axe.contour(m, cmap=cmap, interpolation='none')
     else:
-        axe.imshow(m, cmap=cmap, interpolation='nearest', alpha=args.alpha, vmin=0, vmax=args.C)
+        axe.imshow(m, cmap=cmap, interpolation='none', alpha=args.alpha, vmin=0, vmax=args.C)
     axe.axis('off')
 
 
@@ -254,6 +272,7 @@ def get_args() -> argparse.Namespace:
 def main() -> None:
     args: argparse.Namespace = get_args()
     np.random.seed(args.seed)
+    mpl.rcParams['image.interpolation'] = 'none'
 
     background_names: List[str]
     segmentation_names: List[List[str]]
