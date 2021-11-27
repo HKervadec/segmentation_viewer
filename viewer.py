@@ -177,15 +177,27 @@ def display(background_names: list[str], segmentation_names: list[list[str]],
 
 
 def get_image_lists(img_source: str, folders: list[str], id_regex: str) -> tuple[list[str], list[list[str]], list[str]]:
+        '''
+        We assume here that all files already exists. I could simply get the filelist from img_source, and load then
+        dynamically.
+        But I prefer to make sure, for now, that all folders contain exactly the same files (same number, same names
+        no additions, no substraction).
+        '''
         path_source: Path = Path(img_source)
-        background_names: list[str] = sorted(map(str, path_source.glob("*")))
-        segmentation_names: list[list[str]] = [sorted(map(str, Path(folder).glob("*"))) for folder in folders]
+        raw_background_names: list[str] = sorted(map(str, path_source.glob("*")))
+        raw_segmentation_names: list[list[str]] = [sorted(map(str, Path(folder).glob("*"))) for folder in folders]
 
-        extracter: Callable[[str], str] = partial(extract, id_regex)
-        background_names = [bg for bg in background_names if extracter(bg) is not None]
-        segmentation_names = [[sn for sn in sl if extracter(sn) is not None] for sl in segmentation_names]
+        extracter: Callable[[str], Optional[str]] = partial(extract,
+                                                            id_regex)
 
-        ids: list[str] = list(map(extracter, background_names))
+        background_names: list[str]
+        segmentation_names: list[list[str]]
+        ids: list[str]
+
+        background_names = [bg for bg in raw_background_names if extracter(bg) is not None]
+        segmentation_names = [[sn for sn in sl if extracter(sn) is not None]
+                              for sl in raw_segmentation_names]
+        ids = [e for e in map(extracter, background_names) if e is not None]
 
         for names, folder in zip(segmentation_names, folders):
                 try:
