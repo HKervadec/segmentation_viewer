@@ -84,18 +84,6 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool, cmap,
         else:
                 m = mask
 
-        # try:
-        #     assert len(img.shape) == len(m.shape)
-        # except AssertionError:
-        #     # print(title)
-        #     print(img.shape, m.shape)
-        #     # raise
-
-        #     # Some grayscale mask are sometimes loaded with 3 channel
-        #     # m = m[:, :, 0]
-        #     m = m[..., None]
-        #     # img = np.moveaxis(img, -1, 0)
-
         assert m.dtype == np.uint8
         assert set(np.unique(m)) <= set(range(args.C)), (np.unique(m),
                                                          np.unique(mask),
