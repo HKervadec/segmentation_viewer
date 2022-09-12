@@ -188,15 +188,23 @@ def get_image_lists(img_source: str, folders: list[str], id_regex: str) -> tuple
         ids = [e for e in map(extracter, background_names) if e is not None]
 
         for names, folder in zip(segmentation_names, folders):
+                folder_ids: list[str] = [e for e in map(extracter, names) if e is not None]
+
                 try:
-                        assert(len(background_names) == len(names))
-                        assert(ids == list(map(extracter, names)))
+                        assert len(background_names) == len(names)
+                        assert ids == folder_ids
                 except AssertionError:
                         print(f"Error verifying content for folder {folder}")
                         print(f"Background folder '{img_source}': {len(background_names)} imgs")
-                        pprint(background_names[:10])
+                        # pprint(background_names[:10])
                         print(f"Folder '{folder}': {len(names)} imgs")
-                        pprint(names[:10])
+                        # pprint(names[:10])
+
+                        s_ids: set[str] = set(ids)
+                        s_f_ids: set[str] = set(folder_ids)
+                        diff: set[str] = (s_ids - s_f_ids) | (s_f_ids - s_ids)
+                        print(f"Difference between the two sets: ({len(diff)} images)")
+                        pprint(diff)
 
                         raise
 
