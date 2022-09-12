@@ -198,6 +198,8 @@ def get_image_lists(img_source: str, folders: list[str], id_regex: str) -> tuple
                         print(f"Folder '{folder}': {len(names)} imgs")
                         pprint(names[:10])
 
+                        raise
+
         return background_names, segmentation_names, ids
 
 
