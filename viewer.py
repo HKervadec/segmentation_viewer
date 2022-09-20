@@ -161,7 +161,7 @@ def display(background_names: list[str], segmentation_names: list[list[str]],
                         if i == 0:
                                 axe.set_title(column_title[j])
 
-                fig.tight_layout()
+        grid.tight_layout(fig)
 
 
 def get_image_lists(img_source: str, folders: list[str], id_regex: str) -> tuple[list[str], list[list[str]], list[str]]:
