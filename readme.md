@@ -58,3 +58,8 @@ python3.9 viewer.py  -n 1 -C 34 --img_source data/gsv_images results/cityscapes/
 I also added the `--legend` option, to display the discretized colors legend at the bottom of the plot ; this is most useful for results with many different classes, such as Cityscape.
 
 Adding the colormap for PascalVOC for instance would be quite easy.
+
+---
+
+Things to add:
+* Remove all the wasted space around the plots
