@@ -276,7 +276,7 @@ If not set, will use the whole folder name.""")
         parser.add_argument("--legend", action="store_true",
                             help="When set, display the legend of the colors at the bottom")
 
-        parser.add_argument("--cmap", default='rainbow', choices=list(matplotlib.cm.datad.keys()) + ['cityscape'])
+        parser.add_argument("--cmap", default='rainbow', choices=list(plt.colormaps()) + ['cityscape'])
         args = parser.parse_args()
 
         return args
