@@ -71,32 +71,34 @@ def extract(pattern: str, string: str) -> Optional[str]:
         return None  # ID not found
 
 
-def display_item(axe, img: np.ndarray, mask: np.ndarray, contour: bool, cmap,
+def display_item(axe, img: np.ndarray, mask: np.ndarray | None, contour: bool, cmap,
                  args):
-        if mask.shape != img.shape[:2]:
-                assert mask.dtype == np.uint8
-                m = resize(mask, img.shape[:2],
-                           order=0,
-                           mode='constant',
-                           preserve_range=True,
-                           anti_aliasing=False).astype(np.uint8)
-                assert set(np.unique(mask)) == set(np.unique(m))
-        else:
-                m = mask
+        if mask is not None:
+                if mask.shape != img.shape[:2]:
+                        assert mask.dtype == np.uint8
+                        m = resize(mask, img.shape[:2],
+                                   order=0,
+                                   mode='constant',
+                                   preserve_range=True,
+                                   anti_aliasing=False).astype(np.uint8)
+                        assert set(np.unique(mask)) == set(np.unique(m))
+                else:
+                        m = mask
 
-        assert m.dtype == np.uint8
-        assert set(np.unique(m)) <= set(range(args.C)), (np.unique(m),
-                                                         np.unique(mask),
-                                                         args.C,
-                                                         m.dtype,
-                                                         mask.dtype)
+                assert m.dtype == np.uint8
+                assert set(np.unique(m)) <= set(range(args.C)), (np.unique(m),
+                                                                 np.unique(mask),
+                                                                 args.C,
+                                                                 m.dtype,
+                                                                 mask.dtype)
 
         axe.imshow(img, cmap="gray")
 
-        if contour:
-                axe.contour(m, cmap=cmap, interpolation='none')
-        else:
-                axe.imshow(m, cmap=cmap, interpolation='none', alpha=args.alpha, vmin=0, vmax=args.C)
+        if mask is not None:
+                if contour:
+                        axe.contour(m, cmap=cmap, interpolation='none')
+                else:
+                        axe.imshow(m, cmap=cmap, interpolation='none', alpha=args.alpha, vmin=0, vmax=args.C)
         axe.axis('off')
 
 
@@ -145,18 +147,23 @@ def display(background_names: list[str], segmentation_names: list[list[str]],
                         # axe = grid[ax_id]
                         axe = plt.subplot(grid[ax_id])
 
-                        seg: np.ndarray = imread(names[idx])
-                        if crop > 0:
-                                seg = seg[crop:-crop, crop:-crop]
-                        if remap:
-                                for k, v in remap.items():
-                                        seg[seg == k] = v
+                        name: str | None = names[idx]
+                        seg: np.ndarray | None
+                        if name:
+                                seg = imread(name)
+                                if crop > 0:
+                                        seg = seg[crop:-crop, crop:-crop]  # type: ignore
+                                if remap:
+                                        for k, v in remap.items():
+                                                seg[seg == k] = v  # type: ignore
+                        else:
+                                seg = None
 
                         display_item(axe, img, seg, contour, cmap, args)
 
                         if j == 0:
                                 print(row_title[idx])
-                                axe.text(-30, seg.shape[1] // 2, row_title[idx], rotation=90,
+                                axe.text(-30, img.shape[1] // 2, row_title[idx], rotation=90,
                                          verticalalignment='center', fontsize=14)
                         if i == 0:
                                 axe.set_title(column_title[j])
@@ -185,6 +192,7 @@ def get_image_lists(img_source: str, folders: list[str], id_regex: str) -> tuple
         background_names = [bg for bg in raw_background_names if extracter(bg) is not None]
         segmentation_names = [[sn for sn in sl if extracter(sn) is not None]
                               for sl in raw_segmentation_names]
+
         ids = [e for e in map(extracter, background_names) if e is not None]
 
         for names, folder in zip(segmentation_names, folders):
@@ -275,6 +283,8 @@ If not set, will use the whole folder name.""")
                             help="Do not draw a contour but a transparent overlap instead.")
         parser.add_argument("--legend", action="store_true",
                             help="When set, display the legend of the colors at the bottom")
+        parser.add_argument("--add_empty_column", action="store_true",
+                            help="Add an empty column on the left, with only the image.")
 
         parser.add_argument("--cmap", default='rainbow', choices=list(plt.colormaps()) + ['cityscape'])
         args = parser.parse_args()
@@ -297,6 +307,10 @@ def main() -> None:
         else:
                 assert len(args.display_names) == len(args.folders), (args.display_names, args.folders)
                 display_names = args.display_names
+
+        if args.add_empty_column:
+                segmentation_names = [[""] * len(segmentation_names[0])] + segmentation_names
+                display_names = ["Image"] + display_names
 
         order: list[int] = list(range(len(background_names)))
         order = np.random.permutation(order)  # type: ignore
