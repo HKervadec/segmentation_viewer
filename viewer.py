@@ -35,8 +35,7 @@ import matplotlib as mpl
 import matplotlib.cm
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from skimage.io import imread
-from skimage.transform import resize
+from PIL import Image
 from matplotlib.colors import ListedColormap
 
 
@@ -98,11 +97,8 @@ def display_item(axe, img: np.ndarray, mask: np.ndarray | None, contour: bool, c
         if mask is not None:
                 if mask.shape != img.shape[:2]:
                         assert mask.dtype == np.uint8
-                        m = resize(mask, img.shape[:2],
-                                   order=0,
-                                   mode='constant',
-                                   preserve_range=True,
-                                   anti_aliasing=False).astype(np.uint8)
+                        m = np.asarray(Image.fromarray(mask).resize(img.shape[:2],
+                                                                    resample=Image.Resampling.NEAREST)).astype(np.uint8)
                         assert set(np.unique(mask)) == set(np.unique(m))
                 else:
                         m = mask
@@ -159,7 +155,8 @@ def display(background_names: list[str], segmentation_names: list[list[str]],
                 ax.set_title("Legend")
 
         for i, idx in enumerate(indexes):
-                img: np.ndarray = imread(background_names[idx])
+                # img: np.ndarray = imread(background_names[idx])
+                img: np.ndarray = np.asarray(Image.open(background_names[idx]))
 
                 if crop > 0:
                         img = img[crop:-crop, crop:-crop]
@@ -172,7 +169,7 @@ def display(background_names: list[str], segmentation_names: list[list[str]],
                         name: str | None = names[idx]
                         seg: np.ndarray | None
                         if name:
-                                seg = imread(name)
+                                seg = np.asarray(Image.open(name))
                                 if crop > 0:
                                         seg = seg[crop:-crop, crop:-crop]  # type: ignore
                                 if remap:
