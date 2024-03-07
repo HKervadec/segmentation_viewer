@@ -302,7 +302,7 @@ If not set, will use the whole folder name.""")
                             help="Do not draw a contour but a transparent overlap instead.")
         parser.add_argument("--legend", action="store_true",
                             help="When set, display the legend of the colors at the bottom")
-        parser.add_argument("--add_empty_column", action="store_true",
+        parser.add_argument("--add_empty_column", "--show_img", action="store_true",
                             help="Add an empty column on the left, with only the image.")
 
         parser.add_argument("--cmap", default='rainbow', choices=list(plt.colormaps()) + ['cityscape'])
