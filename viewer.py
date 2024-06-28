@@ -169,7 +169,7 @@ def display(background_names: list[str], segmentation_names: list[list[str]],
                         name: str | None = names[idx]
                         seg: np.ndarray | None
                         if name:
-                                seg = np.asarray(Image.open(name))
+                                seg = np.array(Image.open(name))
                                 if crop > 0:
                                         seg = seg[crop:-crop, crop:-crop]  # type: ignore
                                 if remap:
