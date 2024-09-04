@@ -190,13 +190,8 @@ def display(background_names: list[str], segmentation_names: list[list[str]],
                 fig.tight_layout()
 
 
-def get_image_lists(img_source: str, folders: list[str], id_regex: str) -> tuple[list[str], list[list[str]], list[str]]:
-        '''
-        We assume here that all files already exists. I could simply get the filelist from img_source, and load then
-        dynamically.
-        But I prefer to make sure, for now, that all folders contain exactly the same files (same number, same names
-        no additions, no substraction).
-        '''
+def get_image_lists(img_source: str, folders: list[str], id_regex: str,
+                    strict: bool) -> tuple[list[str], list[list[str]], list[str]]:
         path_source: Path = Path(img_source)
         raw_background_names: list[str] = sorted(map(str, path_source.glob("*")))
         raw_segmentation_names: list[list[str]] = [sorted(map(str, Path(folder).glob("*"))) for folder in folders]
@@ -212,28 +207,46 @@ def get_image_lists(img_source: str, folders: list[str], id_regex: str) -> tuple
         segmentation_names = [[sn for sn in sl if extracter(sn) is not None]
                               for sl in raw_segmentation_names]
 
-        ids = [e for e in map(extracter, background_names) if e is not None]
+        if strict:
+                '''
+                We assume here that all files already exists. I could simply get
+                he filelist from img_source, and load then dynamically.
+                But I prefer to make sure, for now, that all folders contain
+                exactly the same files (same number, same names, no additions, no substraction).
+                '''
+                ids = [e for e in map(extracter, background_names) if e is not None]
 
-        for names, folder in zip(segmentation_names, folders):
-                folder_ids: list[str] = [e for e in map(extracter, names) if e is not None]
+                for names, folder in zip(segmentation_names, folders):
+                        folder_ids: list[str] = [e for e in map(extracter, names) if e is not None]
 
-                try:
-                        assert len(background_names) == len(names)
-                        assert ids == folder_ids
-                except AssertionError:
-                        print(f"Error verifying content for folder {folder}")
-                        print(f"Background folder '{img_source}': {len(background_names)} imgs")
-                        # pprint(background_names[:10])
-                        print(f"Folder '{folder}': {len(names)} imgs")
-                        # pprint(names[:10])
+                        try:
+                                assert len(background_names) == len(names)
+                                assert ids == folder_ids
+                        except AssertionError:
+                                print(f"Error verifying content for folder {folder}")
+                                print(f"Background folder '{img_source}': {len(background_names)} imgs")
+                                # pprint(background_names[:10])
+                                print(f"Folder '{folder}': {len(names)} imgs")
+                                # pprint(names[:10])
 
-                        s_ids: set[str] = set(ids)
-                        s_f_ids: set[str] = set(folder_ids)
-                        diff: set[str] = (s_ids - s_f_ids) | (s_f_ids - s_ids)
-                        print(f"Difference between the two sets: ({len(diff)} images)")
-                        pprint(diff)
+                                s_ids: set[str] = set(ids)
+                                s_f_ids: set[str] = set(folder_ids)
+                                diff: set[str] = (s_ids - s_f_ids) | (s_f_ids - s_ids)
+                                print(f"Difference between the two sets: ({len(diff)} images)")
+                                pprint(list(diff)[:10])
 
-                        raise
+                                raise ValueError(f"Content of {folder} differs from the rest")
+        else:
+                intersection: set[str] = set(e for e in map(extracter, background_names) if e is not None)
+                for names in segmentation_names:
+                        intersection &= set(e for e in map(extracter, names) if e is not None)
+
+                filter_fn = lambda e: extracter(e) in intersection
+                background_names = list(filter(filter_fn, background_names))
+                segmentation_names = [list(filter(filter_fn, names))
+                                      for names in segmentation_names]
+
+                ids = list(intersection)
 
         return background_names, segmentation_names, ids
 
@@ -290,6 +303,9 @@ Required to match the images between them.
 Can easily be modified to also handle .jpg""")
         parser.add_argument("folders", type=str, nargs='*',
                             help="The folder containing the source segmentations.")
+        parser.add_argument("--strict", action='store_true',
+                            help="Forces folders to have *exactly* the same files, instead of taking the intersection of all of them.")
+
         parser.add_argument("--display_names", type=str, nargs='*',
                             help="""The display name for the folders in the viewer.
 If not set, will use the whole folder name.""")
@@ -319,7 +335,7 @@ def main() -> None:
         background_names: list[str]
         segmentation_names: list[list[str]]
         ids: list[str]
-        background_names, segmentation_names, ids = get_image_lists(args.img_source, args.folders, args.id_regex)
+        background_names, segmentation_names, ids = get_image_lists(args.img_source, args.folders, args.id_regex, args.strict)
 
         if args.display_names is None:
                 display_names = [f for f in args.folders]
