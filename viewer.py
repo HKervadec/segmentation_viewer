@@ -324,6 +324,8 @@ If not set, will use the whole folder name.""")
         parser.add_argument("--cmap", default='rainbow', choices=list(plt.colormaps()) + ['cityscape'])
         args = parser.parse_args()
 
+        pprint(args.__dict__)
+
         return args
 
 
